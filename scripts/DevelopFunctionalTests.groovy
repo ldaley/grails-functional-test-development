@@ -130,7 +130,23 @@ createGrailsProcess = { String[] args, err2out = true ->
 }
 
 createGrailsProcessBuilder = { String[] args ->
-	new ProcessBuilder(getGrailsStarterPath(), *args).directory(grailsSettings.baseDir)
+	def builder = new ProcessBuilder()
+	builder.directory(grailsSettings.baseDir)
+	def env = builder.environment()
+
+	if (isWindows()) {
+		def javaOpts = []
+		env.JAVA_OPTS.eachMatch(~/-D\S+="[^"]+?"/) { javaOpts << it.replace('"', '') }
+		def cmd = [env.JAVA_EXE, *javaOpts, '-classpath', env.STARTER_CLASSPATH, env.STARTER_MAIN_CLASS, '--main', env.CLASS, '--conf', env.STARTER_CONF]
+		if (env.CP) {
+			cmd << '--classpath' << env.CP
+		}
+		builder.command(*cmd, *args)
+	} else {
+		builder.command(getGrailsStarterPath(), *args)
+	}
+	
+	builder
 }
 
 getGrailsStarterPath = {
