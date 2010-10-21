@@ -172,7 +172,8 @@ isRunning = { Process process ->
 extractBaseUrlFromStartedMessage = {
 	def matcher = it =~ ~/Server running. Browse to (\S+).*/
 	if (matcher) {
-		matcher[0][1]
+		def base = matcher[0][1]
+		base.endsWith("/") ? base : base + "/"
 	} else {
 		null
 	}
