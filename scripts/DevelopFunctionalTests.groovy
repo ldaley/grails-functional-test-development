@@ -143,7 +143,8 @@ getGrailsStarterPath = {
 		die "GRAILS_HOME points to $grailsHome.path which does not exist, cannot continue"
 	}
 	
-	def starterFile = new File(grailsHome, "bin/grails")
+	def launcher = isWindows() ? "grails.bat" : "grails"
+	def starterFile = new File(grailsHome, "bin/$launcher")
 	if (!starterFile.exists()) {
 		die "GRAILS_HOME points to $grailsHome.path which does not have a 'bin/grails' in it, cannot continue"
 	}
@@ -201,4 +202,12 @@ exhaust = { Reader reader, String prefix = "  > " ->
 	} catch (IOException e) {
 		// ignore
 	}
+}
+
+getOsName = {
+	System.getProperty("os.name")
+}
+
+isWindows = {
+	getOsName().startsWith("Windows")
 }
