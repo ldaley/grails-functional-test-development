@@ -135,9 +135,17 @@ createGrailsProcessBuilder = { String[] args ->
 	def env = builder.environment()
 	def props = System.properties
 	
-	def javaOpts = ["grails.home", "grails.version", "base.dir", "tools.jar", "groovy.starter.conf"].collect { "-D" + it + "=" + props[it] }
+	def javaOpts = []
 	if (!env.JAVA_OPTS) {
 		javaOpts << "-Xmx512m" << "-XX:MaxPermSize=96m"
+	} else {
+		env.JAVA_OPTS.eachMatch(~/-.+?(?=\s+-|-s*$)/) {
+			javaOpts << it.replace('"', '')
+		}
+	}
+	
+	["grails.home", "grails.version", "base.dir", "tools.jar", "groovy.starter.conf"].each { 
+		javaOpts << ("-D" + it + "=" + props[it])
 	}
 	
 	def java = props["java.home"] + "/bin/java"
