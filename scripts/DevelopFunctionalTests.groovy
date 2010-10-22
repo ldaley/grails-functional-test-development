@@ -133,23 +133,22 @@ createGrailsProcessBuilder = { String[] args ->
 	def builder = new ProcessBuilder()
 	builder.directory(grailsSettings.baseDir)
 	def env = builder.environment()
-
-	if (isWindows()) {
-		def javaOpts = []
-		env.JAVA_OPTS.eachMatch(~/-D\S+="[^"]+?"/) { javaOpts << it.replace('"', '') }
-		def cmd = [env.JAVA_EXE, *javaOpts, '-classpath', env.STARTER_CLASSPATH, env.STARTER_MAIN_CLASS, '--main', env.CLASS, '--conf', env.STARTER_CONF]
-		if (env.CP) {
-			cmd << '--classpath' << env.CP
-		}
-		builder.command(*cmd, *args)
-	} else {
-		builder.command(getGrailsStarterPath(), *args)
+	def props = System.properties
+	
+	def javaOpts = ["grails.home", "grails.version", "base.dir", "tools.jar", "groovy.starter.conf"].collect { "-D" + it + "=" + props[it] }
+	if (!env.JAVA_OPTS) {
+		javaOpts << "-Xmx512m" << "-XX:MaxPermSize=96m"
 	}
+	
+	def java = props["java.home"] + "/bin/java"
+	def cmd = [java, *javaOpts, '-classpath', props['java.class.path'], 'org.codehaus.groovy.grails.cli.support.GrailsStarter', '--main', 'org.codehaus.groovy.grails.cli.GrailsScriptRunner', '--conf', props['groovy.starter.conf']]
+
+	builder.command(*cmd, *args)
 	
 	builder
 }
 
-getGrailsStarterPath = {
+getGrailsPath = {
 	def grailsHome = grailsSettings.grailsHome
 	
 	if (!grailsHome) {
@@ -159,8 +158,7 @@ getGrailsStarterPath = {
 		die "GRAILS_HOME points to $grailsHome.path which does not exist, cannot continue"
 	}
 	
-	def launcher = isWindows() ? "grails.bat" : "grails"
-	def starterFile = new File(grailsHome, "bin/$launcher")
+	def starterFile = new File(grailsHome, "bin/grails")
 	if (!starterFile.exists()) {
 		die "GRAILS_HOME points to $grailsHome.path which does not have a 'bin/grails' in it, cannot continue"
 	}
@@ -218,12 +216,4 @@ exhaust = { Reader reader, String prefix = "  > " ->
 	} catch (IOException e) {
 		// ignore
 	}
-}
-
-getOsName = {
-	System.getProperty("os.name")
-}
-
-isWindows = {
-	getOsName().startsWith("Windows")
 }
