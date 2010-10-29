@@ -77,7 +77,7 @@ target('default': "Run a Grails applications unit tests") {
 			}
 			
 			def baseUrlArg = "-baseUrl=$baseUrl" as String
-			def tests = runTests(baseUrlArg, "functional:", *(line.tokenize() as String[]))
+			def tests = runTests("-non-interactive", baseUrlArg, "functional:", *(line.tokenize() as String[]))
 			def testsOutput = new BufferedReader(new InputStreamReader(tests.in))
 			exhaust(testsOutput, testOutputPrefix)
 			
