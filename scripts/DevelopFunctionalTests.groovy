@@ -76,8 +76,21 @@ target('default': "Run a Grails applications unit tests") {
 				last = line
 			}
 			
+			def args = []
+			def properties = [:]
+			
+			
+			parseCommandLine(line).each {
+				if (it.startsWith("-D")) {
+					def m = it =~ ~/-D(.+)=(.+)/
+					properties[m[0][1]] = m[0][2]
+				} else {
+					args << it
+				}
+			}
+			
 			def baseUrlArg = "-baseUrl=$baseUrl" as String
-			def tests = runTests("-non-interactive", baseUrlArg, "functional:", *(line.tokenize() as String[]))
+			def tests = runTests(*:properties, "-non-interactive", baseUrlArg, "functional:", *args)
 			def testsOutput = new BufferedReader(new InputStreamReader(tests.in))
 			exhaust(testsOutput, testOutputPrefix)
 			
@@ -99,8 +112,7 @@ target('default': "Run a Grails applications unit tests") {
 
 launchApp = { String[] args ->
 	def command = ["test", "run-app"] + args.toList()
-	update "Launching application with '${command.join(' ')}'"
-	def process = createGrailsProcess(command as String[])
+	def process = createGrailsProcess([:], command as String[])
 	
 	def inputStream = new PipedInputStream()
 	def outputStream = new PipedOutputStream(inputStream)
@@ -139,14 +151,15 @@ stopApp = {
 	app.waitFor()
 }
 
-runTests = { String[] args -> 
+runTests = { Map properties, String[] args -> 
 	def command = ["test-app"] + args.toList()
-	update "Launching tests with '${command.join(' ')}'"
-	createGrailsProcess(command as String[])
+	createGrailsProcess(properties, *command)
 }
 
-createGrailsProcess = { String[] args, err2out = true ->
-	createGrailsProcessBuilder(*args).redirectErrorStream(err2out).start()
+createGrailsProcess = { Map properties, String[] args, err2out = true ->
+	def command = properties.collect { k, v -> "-D$k=$v" } + args.toList()
+	update "Launching grails with '${command.join(' ')}'"
+	createGrailsProcessBuilder(*(command*.toString())).redirectErrorStream(err2out).start()
 }
 
 createGrailsProcessBuilder = { String[] args ->
@@ -251,3 +264,44 @@ ignoreIOExceptions =  [uncaughtException: { Thread t, Throwable e ->
 		throw e
 	}
 }] as Thread.UncaughtExceptionHandler
+
+parseCommandLine = { line ->
+	line = line.trim()
+	def words = []
+	while (!line.empty) {
+		
+		def field = ''
+		def snippet
+		
+		def match
+		def matches = { pattern -> match = line =~ pattern }
+		
+		while (true) {
+			if (matches(~/^("(([^"\\]|\\.)*)").*/)) {
+				line -= match[0][1]
+				snippet = match[0][2].replace("\\", "")
+			} else if (line.startsWith('"')) {
+				throw new IllegalArgumentException("Unmatched double quote: ${line}")
+			} else if (matches(~/^('([^']*)').*/)) {
+				line -= match[0][1]
+				snippet = match[0][2]
+			} else if (line.startsWith("'")) {
+				throw new IllegalArgumentException("Unmatched single quote: ${line}")
+			} else if (matches(~/^(\\(.)?).*/)) {
+				line -= match[0][1]
+				snippet = match[0][2] ?: "\\"
+			} else if (matches(~/^([^\s\\'"]+)/)) {
+				line -= match[0][1]
+				snippet = match[0][1]
+			} else {
+				line = line.trim()
+				break
+			}
+			field += snippet
+		}
+		
+		words << field
+	}
+	
+	words
+}
