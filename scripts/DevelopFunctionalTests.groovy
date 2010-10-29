@@ -20,39 +20,36 @@ target('default': "Run a Grails applications unit tests") {
 
 	println ""
 	
+	appOutputPrefix = "  [app]  "
+	testOutputPrefix = " [test]  "
+	
 	def runAppArgs = args.tokenize()
 	def run = true
-
-	// Set in launchApp()
-	baseUrl = null
-	appOutput = null
 	
-	def app = launchApp(*runAppArgs)
+	app = launchApp(*runAppArgs)
 	
 	addShutdownHook {
-		if (isRunning(app)) {
+		if (isRunning(binding.app)) {
 			println ""
 			update "stopping app"
-			app.destroy()
-			exhaust(appOutput)
-			app.waitFor()
+			stopApp()
 		}
 	}
-	
+
 	def input = new BufferedReader(new InputStreamReader(System.in))
 	def last = ""
 	
 	while (run) {
 		println ""
-		println "-- Ready to run tests --"
-		println "   * Enter a test target pattern to run tests (e.g. functional: Login)"
+		println "Ready to run tests."
+		println " - Enter a test target pattern to run tests (e.g. 'functional: Login')"
 		if (last) {
-			println "   * Enter a blank line to rerun the previous tests (pattern: '$last')"
+			println " - Enter a blank line to rerun the previous tests (pattern: '$last')"
 		} else {
-			println "   * Enter a blank line to run all functional tests"
+			println " - Enter a blank line to run all functional tests"
 		}
-		println "   * Enter 'restart' to restart the running application"
-		println "   * Enter 'exit' to stop"
+		println " - Enter 'restart' to restart the running application"
+		println " - Enter 'exit' to stop"
 		println ""
 		print "Command: "
 
@@ -63,14 +60,10 @@ target('default': "Run a Grails applications unit tests") {
 		if (isExit(line)) {
 			run = false
 			update "stopping app"
-			app.destroy()
-			exhaust(appOutput)
-			app.waitFor()
+			stopApp()
 		} else if (isRestart(line)) {
 			update "restarting app"
-			app.destroy()
-			exhaust(appOutput)
-			app.waitFor()
+			stopApp()
 			app = launchApp(*runAppArgs)
 		} else { // is test command
 			if (line == "") {
@@ -84,8 +77,16 @@ target('default': "Run a Grails applications unit tests") {
 			
 			def baseUrlArg = "-baseUrl=$baseUrl" as String
 			def tests = runTests(baseUrlArg, *(line.tokenize() as String[]))
-			def testsOutput = getOutputReader(tests)
-			exhaust(testsOutput)
+			def testsOutput = new BufferedReader(new InputStreamReader(tests.in))
+			exhaust(testsOutput, testOutputPrefix)
+			
+			println ""
+			update "Output from the application while running tests"
+			try {
+				exhaust(appOutput, appOutputPrefix, true)
+			} catch (IOException e) {
+				// ignore
+			}
 			
 			if (!isRunning(app)) {
 				update "the app crashed, restarting it"
@@ -100,23 +101,41 @@ launchApp = { String[] args ->
 	update "Launching application with '${command.join(' ')}'"
 	def process = createGrailsProcess(command as String[])
 	
-	appOutput = getOutputReader(process)
+	def inputStream = new PipedInputStream()
+	def outputStream = new PipedOutputStream(inputStream)
+	appOutput = new BufferedReader(new InputStreamReader(inputStream))
+	appOutputReadingThread = process.consumeProcessOutputStream(outputStream)
 	
-	def starting = true
-	while (starting) {
-		def line = appOutput.readLine()
-		if (line == null) {
-			die "run-app process has closed output"
+	try {
+		baseUrl = exhaust(appOutput, appOutputPrefix, false) {
+			def matcher = it =~ ~/Server running. Browse to (\S+).*/
+			if (matcher) {
+				def base = matcher[0][1]
+				base.endsWith("/") ? base : base + "/"
+			} else {
+				null
+			}
 		}
-		println "  > $line"
-		
-		baseUrl = extractBaseUrlFromStartedMessage(line)
-		if (baseUrl) {
-			starting = false
+	} catch (IOException e) {
+		if (!(isRunning(process))) {
+			die "the application did not start successfully"
 		}
 	}
-	
+		
 	process
+}
+
+stopApp = {
+	appOutputReadingThread.defaultUncaughtExceptionHandler = ignoreIOExceptions
+	app.destroy()
+	try {
+		exhaust(appOutput, appOutputPrefix)
+	} catch (IOException e) {
+		if (isRunning(app)) {
+			throw e
+		}
+	}
+	app.waitFor()
 }
 
 runTests = { String[] args -> 
@@ -175,12 +194,13 @@ getGrailsPath = {
 }
 
 die = {
-	event("StatusFinal", [it])
+	println ""
+	event("StatusError", ["Error: $it"])
 	System.exit(1)
 }
 
 update = {
-	event("StatusUpdate", [it])
+	event("StatusUpdate", ["$it"])
 }
 
 isRunning = { Process process ->
@@ -192,16 +212,6 @@ isRunning = { Process process ->
 	}
 }
 
-extractBaseUrlFromStartedMessage = {
-	def matcher = it =~ ~/Server running. Browse to (\S+).*/
-	if (matcher) {
-		def base = matcher[0][1]
-		base.endsWith("/") ? base : base + "/"
-	} else {
-		null
-	}
-}
-
 isExit = {
 	it.toLowerCase() == "exit"
 }
@@ -210,18 +220,33 @@ isRestart = {
 	it.toLowerCase() == "restart"
 }
 
-getOutputReader = { Process process ->
-	new BufferedReader(new InputStreamReader(process.in))
-}
-
-exhaust = { Reader reader, String prefix = "  > " ->
-	try {
-		def line = reader.readLine()
-		while (line != null) {
-			println "${prefix}${line}"
-			line = reader.readLine()
+exhaust = { Reader reader, String prefix, boolean noWait = false, Closure stopAt = null ->
+	if (noWait && !reader.ready()) {
+		return null
+	}
+	
+	def line = reader.readLine()
+	while (line != null) {
+		println "${prefix}${line}"
+		if (stopAt) {
+			def stopped = stopAt(line)
+			if (stopped) {
+				return stopped
+			}
 		}
-	} catch (IOException e) {
-		// ignore
+		
+		if (noWait && !reader.ready()) {
+			return null
+		}
+		
+		line = reader.readLine()
 	}
 }
+
+ignoreIOExceptions =  [uncaughtException: { Thread t, Throwable e -> 
+	if (e instanceof IOException) {
+		// ignore
+	} else {
+		throw e
+	}
+}] as Thread.UncaughtExceptionHandler
