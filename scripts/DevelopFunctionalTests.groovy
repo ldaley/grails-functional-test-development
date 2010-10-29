@@ -42,11 +42,12 @@ target('default': "Run a Grails applications unit tests") {
 	while (run) {
 		println ""
 		println "Ready to run tests."
-		println " - Enter a test target pattern to run tests (e.g. 'functional: Login')"
+		println " - Enter a test target pattern to run tests"
 		if (last) {
 			println " - Enter a blank line to rerun the previous tests (pattern: '$last')"
+			println " - Enter 'all' to run all functional tests"
 		} else {
-			println " - Enter a blank line to run all functional tests"
+			println " - Enter a blank line (or 'all') to run all functional tests"
 		}
 		println " - Enter 'restart' to restart the running application"
 		println " - Enter 'exit' to stop"
@@ -67,16 +68,16 @@ target('default': "Run a Grails applications unit tests") {
 			app = launchApp(*runAppArgs)
 		} else { // is test command
 			if (line == "") {
-				if (last == "") {
-					last = "functional:"
-				}
 				line = last
+			} else if (line == "all") {
+				line = ""
+				last = ""
 			} else {
 				last = line
 			}
 			
 			def baseUrlArg = "-baseUrl=$baseUrl" as String
-			def tests = runTests(baseUrlArg, *(line.tokenize() as String[]))
+			def tests = runTests(baseUrlArg, "functional:", *(line.tokenize() as String[]))
 			def testsOutput = new BufferedReader(new InputStreamReader(tests.in))
 			exhaust(testsOutput, testOutputPrefix)
 			
