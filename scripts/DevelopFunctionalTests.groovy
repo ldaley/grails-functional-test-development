@@ -268,7 +268,7 @@ ignoreIOExceptions =  [uncaughtException: { Thread t, Throwable e ->
 parseCommandLine = { line ->
 	line = line.trim()
 	def words = []
-	while (!line.empty) {
+	while (line) {
 		
 		def field = ''
 		def snippet
