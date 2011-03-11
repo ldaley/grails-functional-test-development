@@ -61,7 +61,7 @@ target('default': "Run a Grails applications unit tests") {
 		if (isExit(line)) {
 			run = false
 			update "stopping app"
-			stopApp()
+			stopApp(quiet: true)
 		} else if (isRestart(line)) {
 			update "restarting app"
 			stopApp()
@@ -138,13 +138,13 @@ launchApp = { String[] args ->
 	process
 }
 
-stopApp = {
+stopApp = { Map options = [:] ->
 	appOutputReadingThread.defaultUncaughtExceptionHandler = ignoreIOExceptions
 	app.destroy()
 	try {
 		exhaust(appOutput, appOutputPrefix)
 	} catch (IOException e) {
-		if (isRunning(app)) {
+		if (isRunning(app) && options.quiet != true) {
 			throw e
 		}
 	}
