@@ -197,6 +197,14 @@ When using develop-functional-tests, the properties targeted for the run-app pro
 
     grails develop-functional-tests -Pserver.port=8090
 
+> The normal -D prefix cannot be used due to a bug with Grails' command line parser.
+
 To specify any properties for the testing process, simply enter them at the command prompt while running the script:
 
     Command: -Dsome.property=foo SomeTest
+
+## Running with a different environment
+
+To start the run-app process with an environment other than “test”, specify the “grails.env” system property…
+
+    grails develop-functional-tests -Pgrails.env=customenv

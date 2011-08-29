@@ -119,7 +119,11 @@ launchApp = { String[] givenArgs ->
 	
 	buildLaunchArgs(givenArgs, args, properties, "P")
 	
-	def command = ["test", "run-app"] + args.toList()
+	def command = ["run-app"] + args.toList()
+	if (!properties["grails.env"]) {
+		command = ["test"] + command
+	}
+	
 	def process = createGrailsProcess(properties, command as String[])
 	
 	def inputStream = new PipedInputStream()
