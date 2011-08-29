@@ -79,15 +79,7 @@ target('default': "Run a Grails applications unit tests") {
 			def args = []
 			def properties = [:]
 			
-			
-			parseCommandLine(line).each {
-				if (it.startsWith("-D")) {
-					def m = it =~ ~/-D(.+)=(.+)/
-					properties[m[0][1]] = m[0][2]
-				} else {
-					args << it
-				}
-			}
+			buildLaunchArgs(parseCommandLine(line), args, properties, "D")
 			
 			def baseUrlArg = "-baseUrl=$baseUrl" as String
 			def tests = runTests(*:properties, "-non-interactive", baseUrlArg, "functional:", *args)
@@ -110,9 +102,25 @@ target('default': "Run a Grails applications unit tests") {
 	}
 }
 
-launchApp = { String[] args ->
+buildLaunchArgs = { tokens, args, properties, propPrefix ->
+	tokens.each {
+		if (it.startsWith("-$propPrefix")) {
+			def m = it =~ ~/-$propPrefix(.+)=(.+)/
+			properties[m[0][1]] = m[0][2]
+		} else {
+			args << it
+		}
+	}
+}
+
+launchApp = { String[] givenArgs ->
+	def args = []
+	def properties = [:]
+	
+	buildLaunchArgs(givenArgs, args, properties, "P")
+	
 	def command = ["test", "run-app"] + args.toList()
-	def process = createGrailsProcess([:], command as String[])
+	def process = createGrailsProcess(properties, command as String[])
 	
 	def inputStream = new PipedInputStream()
 	def outputStream = new PipedOutputStream(inputStream)

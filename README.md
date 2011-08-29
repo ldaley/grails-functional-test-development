@@ -186,3 +186,17 @@ For https support, you can do:
     grails develop-functional-tests -https
 
 If you restart the app (by entering the `restart` command), the same args are used. To change the args you need to exit the script and invoke it again.
+
+## Setting properties for running and testing
+
+You may want to specify properties for either the run-app or test-app processes. Normally when setting properties for grails commands the properties *MUST* come before command name, for example…
+
+    grails -Dserver.port=8090 run-app
+
+When using develop-functional-tests, the properties targeted for the run-app process *MUST* come after the develop-functional-script task name, and must be specified with the “-P” prefix (instead of “-D”), for example…
+
+    grails develop-functional-tests -Pserver.port=8090
+
+To specify any properties for the testing process, simply enter them at the command prompt while running the script:
+
+    Command: -Dsome.property=foo SomeTest
