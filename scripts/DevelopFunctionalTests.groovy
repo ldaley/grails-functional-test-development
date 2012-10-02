@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import org.codehaus.groovy.grails.cli.CommandLineHelper
 
 includeTargets << grailsScript("_GrailsEvents")
 
@@ -36,8 +37,9 @@ target('default': "Run a Grails applications unit tests") {
 		}
 	}
 
-	def input = new BufferedReader(new InputStreamReader(System.in))
 	def last = ""
+	
+	def inputHelper = new CommandLineHelper()
 	
 	while (run) {
 		println ""
@@ -52,9 +54,8 @@ target('default': "Run a Grails applications unit tests") {
 		println " - Enter 'restart' to restart the running application"
 		println " - Enter 'exit' to stop"
 		println ""
-		print "Command: "
 
-		def line = input.readLine().trim()
+		def line = inputHelper.userInput("")?.trim()
 		
 		println ""
 				
@@ -82,7 +83,7 @@ target('default': "Run a Grails applications unit tests") {
 			buildLaunchArgs(parseCommandLine(line), args, properties, "D")
 			
 			def baseUrlArg = "-baseUrl=$baseUrl" as String
-			def tests = runTests(*:properties, "-non-interactive", baseUrlArg, "functional:", *args)
+			def tests = runTests(*:properties, "-non-interactive $baseUrlArg functional: $line")
 			def testsOutput = new BufferedReader(new InputStreamReader(tests.in))
 			exhaust(testsOutput, testOutputPrefix)
 			
@@ -124,7 +125,7 @@ launchApp = { String[] givenArgs ->
 		command = ["test"] + command
 	}
 	
-	def process = createGrailsProcess(properties, command as String[])
+	def process = createGrailsProcess(properties, command.join(" "))
 	
 	def inputStream = new PipedInputStream()
 	def outputStream = new PipedOutputStream(inputStream)
@@ -163,18 +164,16 @@ stopApp = { Map options = [:] ->
 	app.waitFor()
 }
 
-runTests = { Map properties, String[] args -> 
-	def command = ["test-app"] + args.toList()
-	createGrailsProcess(properties, *command)
+runTests = { Map properties, String line -> 
+	createGrailsProcess(properties, "test-app $line")
 }
 
-createGrailsProcess = { Map properties, String[] args, err2out = true ->
-	def command = properties.collect { k, v -> "-D$k=$v" } + args.toList()
-	update "Launching grails with '${command.join(' ')}'"
-	createGrailsProcessBuilder(*(command*.toString())).redirectErrorStream(err2out).start()
+createGrailsProcess = { Map properties, String args, err2out = true ->
+	update "Launching grails with: $args"
+	createGrailsProcessBuilder(args).redirectErrorStream(err2out).start()
 }
 
-createGrailsProcessBuilder = { String[] args ->
+createGrailsProcessBuilder = { String args ->
 	def builder = new ProcessBuilder()
 	builder.directory(grailsSettings.baseDir)
 	def env = builder.environment()
@@ -198,8 +197,7 @@ createGrailsProcessBuilder = { String[] args ->
 	def java = props["java.home"] + "/bin/java"
 	def cmd = [java, *javaOpts, '-classpath', props['java.class.path'], 'org.codehaus.groovy.grails.cli.support.GrailsStarter', '--main', 'org.codehaus.groovy.grails.cli.GrailsScriptRunner', '--conf', props['groovy.starter.conf']]
 
-	builder.command(*cmd, *args)
-	
+	builder.command(*cmd, args)
 	builder
 }
 

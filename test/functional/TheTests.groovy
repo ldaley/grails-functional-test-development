@@ -11,13 +11,13 @@ class TheTests extends GroovyTestCase {
 	}
 	
 	void testRemoting() {
-		remote.exec { theService.setValue(1) }
+		remote.exec { ctx.theService.setValue(1) }
 		assert getText("the", "serviceValue") == "1"
 		
-		remote.exec { theService.setValue(10) }
+		remote.exec { ctx.theService.setValue(10) }
 		assert getText("the", "serviceValue") == "10"
 
-		remote.exec { theService.setValue(1) }
+		remote.exec { ctx.theService.setValue(1) }
 		assert getText("the", "serviceValue") == "1"
 	}
 	
