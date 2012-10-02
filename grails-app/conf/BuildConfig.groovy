@@ -24,9 +24,15 @@ grails.project.dependency.resolution = {
     plugins {
         runtime ":hibernate:$grailsVersion"
         build ":tomcat:$grailsVersion"
-        
+
         test ":geb:0.7.2"
         test ":spock:0.6"
         test ":remote-control:1.3"
+
+        build(":release:2.0.4") {
+            export = false
+        }
     }
 }
+
+grails.release.scm.enabled = false
