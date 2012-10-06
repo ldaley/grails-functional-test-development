@@ -7,7 +7,7 @@ grails.project.source.level = 1.6
 
 grails.project.dependency.resolution = {
     inherits("global")
-    log "error"
+    log "warn"
     checksums true
     repositories {
         inherits true
@@ -25,12 +25,13 @@ grails.project.dependency.resolution = {
         runtime ":hibernate:$grailsVersion"
         build ":tomcat:$grailsVersion"
 
-        test ":geb:0.7.2"
-        test ":spock:0.6"
-        test ":remote-control:1.3"
+        test ":geb:0.7.2", ":spock:0.6", ":remote-control:1.3", {
+            export = false
+        }
 
         build(":release:2.0.4") {
             export = false
+            exclude "groovy"
         }
     }
 }
