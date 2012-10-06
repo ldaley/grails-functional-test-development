@@ -122,8 +122,10 @@ launchApp = { String[] givenArgs ->
 	
 	def command = ["run-app"] + args.toList()
 	if (!properties["grails.env"]) {
-		command = ["test"] + command
+		command += ["test"]
 	}
+	command += ["-reloading"]
+	properties["grails.reload.enabled"] = "true"
 	
 	def process = createGrailsProcess(properties, command.join(" "))
 	
