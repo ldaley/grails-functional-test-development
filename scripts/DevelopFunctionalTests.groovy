@@ -65,7 +65,7 @@ target('default': "Run a Grails applications unit tests") {
 			stopApp(quiet: true)
 		} else if (isRestart(line)) {
 			update "restarting app"
-			stopApp()
+			stopApp(quiet: true)
 			app = launchApp(*runAppArgs)
 		} else { // is test command
 			if (line == "") {
@@ -171,7 +171,7 @@ runTests = { Map properties, String line ->
 }
 
 createGrailsProcess = { Map properties, String args, err2out = true ->
-	update "Launching grails with: $args"
+	update "grails $args"
 	createGrailsProcessBuilder(args).redirectErrorStream(err2out).start()
 }
 
