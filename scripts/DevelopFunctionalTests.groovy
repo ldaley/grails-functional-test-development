@@ -82,8 +82,11 @@ target('default': "Run a Grails applications unit tests") {
 			
 			buildLaunchArgs(parseCommandLine(line), args, properties, "D")
 			
-			def baseUrlArg = "-baseUrl=$baseUrl" as String
-			def tests = runTests(*:properties, "-non-interactive $baseUrlArg functional: $line")
+			def baseUrlArg = ""
+			if (!args.any { it ==~ /--?baseUrl=.+/ }) {
+				baseUrlArg = " -baseUrl=$baseUrl" as String
+			}
+			def tests = runTests(*:properties, "-non-interactive${baseUrlArg} functional: $line")
 			def testsOutput = new BufferedReader(new InputStreamReader(tests.in))
 			exhaust(testsOutput, testOutputPrefix)
 			
