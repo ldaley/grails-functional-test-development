@@ -186,7 +186,7 @@ createGrailsProcessBuilder = { String args ->
 	
 	def javaOpts = []
 	[env.GRAILS_OPTS, env.JAVA_OPTS]*.with {
-		eachMatch(~/-.+?(?=\s+-|-s*$)/) {
+		eachMatch(~/-.+?(?=\s+-|\s*$)/) {
 			javaOpts << it.replace('"', '')
 		}
 	}

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 class FunctionalTestDevelopmentGrailsPlugin {
-	def version = "0.9.3"
+	def version = "0.9.4"
 	def grailsVersion = "* > 2.0.0"
 	def dependsOn = [:]
 	def pluginExcludes = [
