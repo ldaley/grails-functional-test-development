@@ -86,7 +86,7 @@ target('default': "Run a Grails applications unit tests") {
 			if (!args.any { it ==~ /--?baseUrl=.+/ }) {
 				baseUrlArg = " -baseUrl=$baseUrl" as String
 			}
-			def tests = runTests(*:properties, "-non-interactive${baseUrlArg} functional: $line")
+			def tests = runTests(*:properties, "-non-interactive -plain-output${baseUrlArg} functional: $line")
 			def testsOutput = new BufferedReader(new InputStreamReader(tests.in))
 			exhaust(testsOutput, testOutputPrefix)
 			
@@ -128,6 +128,7 @@ launchApp = { String[] givenArgs ->
 		command.add(0, "test")
 	}
 	command.add(0, "-reloading")
+	command.add(0, "-plain-output")
 	properties["grails.reload.enabled"] = "true"
 	
 	def process = createGrailsProcess(properties, command.join(" "))
