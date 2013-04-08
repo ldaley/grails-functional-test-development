@@ -22,14 +22,13 @@ grails.project.dependency.resolution = {
         test "org.seleniumhq.selenium:selenium-chrome-driver:2.25.0"
     }
     plugins {
-        runtime ":hibernate:$grailsVersion"
-        build ":tomcat:$grailsVersion"
-
+        runtime ":hibernate:$grailsVersion", {
+			export = false
+		}
         test ":geb:0.7.2", ":spock:0.6", ":remote-control:1.3", {
             export = false
         }
-
-        build(":release:2.0.4") {
+        build ":release:2.0.4", ":tomcat:$grailsVersion", {
             export = false
             exclude "groovy"
         }
