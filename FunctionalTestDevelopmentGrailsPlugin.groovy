@@ -26,5 +26,8 @@ class FunctionalTestDevelopmentGrailsPlugin {
 	def authorEmail = "ld@ldaley.com"
 	def title = "Functional Test Development"
 	def description = "Provides a script to make developing functional tests quicker"
+	def license = "APACHE"
 	def documentation = "http://grails.org/plugin/functional-test-development"
+	def scm = [url: "https://github.com/alkemist/grails-functional-test-development"]
+	def issueManagement = [system: "JIRA", url: "http://jira.grails.org/browse/GPFUNCTIONALTESTDEVELOPMENT"]
 }
