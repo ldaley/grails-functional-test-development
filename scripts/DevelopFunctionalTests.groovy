@@ -175,6 +175,10 @@ runTests = { Map properties, String line ->
 }
 
 createGrailsProcess = { Map properties, String args, err2out = true ->
+	if (properties) {
+		args = properties.collect { key, value -> "-D${key}=${value}" }.join(' ') + ' ' + args
+	}
+
 	update "grails $args"
 	createGrailsProcessBuilder(args).redirectErrorStream(err2out).start()
 }
